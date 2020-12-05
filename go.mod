@@ -3,7 +3,7 @@ module github.com/lightninglabs/pool
 go 1.14
 
 require (
-	github.com/btcsuite/btcd v0.20.1-beta.0.20200730232343-1db1b6f8217f
+	github.com/btcsuite/btcd v0.21.0-beta.0.20201114000516-e9c7a5ac6401
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
 	github.com/btcsuite/btcutil v1.0.2
 	github.com/btcsuite/btcwallet/wallet/txrules v1.0.0
@@ -15,7 +15,7 @@ require (
 	github.com/lightninglabs/aperture v0.1.3-beta
 	github.com/lightninglabs/lndclient v0.11.0-3
 	github.com/lightninglabs/protobuf-hex-display v1.3.3-0.20191212020323-b444784ce75d
-	github.com/lightningnetwork/lnd v0.11.1-beta
+	github.com/lightningnetwork/lnd v0.11.0-beta.rc4.0.20201204103434-26da2b2c9e71
 	github.com/lightningnetwork/lnd/cert v1.0.3
 	github.com/stretchr/testify v1.5.1
 	github.com/urfave/cli v1.20.0
