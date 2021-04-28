@@ -1796,20 +1796,14 @@
     "poolrpcOfferSidecarRequest": {
       "type": "object",
       "properties": {
-        "channel_capacity_sat": {
-          "type": "string",
-          "format": "uint64",
-          "description": "The total channel capacity in satoshis. This will be used for the bid\norder's amount and min channel/match size values."
+        "auto_negotiate": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "If false, then only the trader_key, unit, self_chan_balance, and\nlease_duration_blocks need to be set in the bid below. Otherwise, the\nfields as they're set when submitting a bid need to be filled in."
         },
-        "self_chan_balance": {
-          "type": "string",
-          "format": "uint64",
-          "description": "The number of satoshis that will be pushed to the recipient in the sidecar\nchannel resulting from the bid order submitted by the offering trader\n(=provider). The initial outbound channel balance will be transferred from\nthe provider's pool account (=taker account) to the maker's account to\nreimburse them for the balance they'll effectively be giving away. The\nreimbursement between the recipient of the sidecar channel and the provider\n(=taker) is _not_ part of the protocol and must happen out of band. The\nsidecar protocol simply deducts all fees for the sidecar channel (execution\nfee, lease premium, chain fees, push amount) from the taker's trading\naccount."
-        },
-        "lease_duration_blocks": {
-          "type": "integer",
-          "format": "int64",
-          "description": "The number of blocks the resulting leased channel should be open for."
+        "bid": {
+          "$ref": "#/definitions/poolrpcBid",
+          "description": "The bid template that will be used to populate the initial sidecar ticket\nas well as auto negotiate the remainig steps of the sidecar channel if\nneeded."
         }
       }
     },
@@ -2019,6 +2013,11 @@
         "ticket": {
           "type": "string",
           "description": "The sidecar ticket to register and add the node and channel funding\ninformation to. The ticket must be in the state \"offered\"."
+        },
+        "auto_negotiate": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "If this value is True, then the daemon will attempt to finish negotiating\nthe details of the sidecar channel automatically in the background. The\nprogress of the ticket can be monitored using the SidecarState RPC. In\naddition, if this flag is set, then this method will _block_ until the\nsidecar negotiation either finishes or breaks down."
         }
       }
     },
