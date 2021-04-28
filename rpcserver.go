@@ -2198,6 +2198,7 @@ func (s *rpcServer) OfferSidecar(ctx context.Context,
 		ctx, btcutil.Amount(req.Bid.Details.Amt),
 		btcutil.Amount(req.Bid.SelfChanBalance),
 		req.Bid.LeaseDurationBlocks, acct.TraderKey,
+		req.AutoNegotiate,
 	)
 	if err != nil {
 		return nil, err
