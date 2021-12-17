@@ -33,6 +33,7 @@ import (
 	lndFunding "github.com/lightningnetwork/lnd/funding"
 	"github.com/lightningnetwork/lnd/input"
 	"github.com/lightningnetwork/lnd/lnrpc"
+	"github.com/lightningnetwork/lnd/lnrpc/verrpc"
 	"github.com/lightningnetwork/lnd/lnwallet/chainfee"
 	"github.com/lightningnetwork/lnd/lnwire"
 )
@@ -1185,11 +1186,58 @@ func prepareAndSubmitOrder(ctx context.Context, o order.Order,
 	)
 }
 
+// lndVersionIsCompatible makes sure the detected lnd version is compatible
+// with our current version requirements. True is returned if the version is
+// compatible, and false otherwise.
+func lndVersionIsCompatible(actual *verrpc.Version,
+	expected *verrpc.Version) bool {
+
+	// We need to check the versions parts sequentially as they are
+	// hierarchical.
+	if actual.AppMajor != expected.AppMajor {
+		if actual.AppMajor > expected.AppMajor {
+			return true
+		}
+		return false
+	}
+
+	if actual.AppMinor != expected.AppMinor {
+		if actual.AppMinor > expected.AppMinor {
+			return true
+		}
+		return false
+	}
+
+	if actual.AppPatch != expected.AppPatch {
+		if actual.AppPatch > expected.AppPatch {
+			return true
+		}
+		return false
+	}
+
+	// The actual version and expected version are identical.
+	return true
+}
+
 // SubmitOrder assembles all the information that is required to submit an order
 // from the trader's lnd node, signs it and then sends the order to the server
 // to be included in the auctioneer's order book.
 func (s *rpcServer) SubmitOrder(ctx context.Context,
 	req *poolrpc.SubmitOrderRequest) (*poolrpc.SubmitOrderResponse, error) {
+
+	// We'll use this channel type selector to pick a channel type based on
+	// the current connected lnd version. This lets us graceful update to
+	// new features as they're available, while still supporting older
+	// versions of lnd.
+	chanTypeSelector := order.WithDefaultChannelType(func() order.ChannelType {
+		// If they didn't specify a value, then we'll select one based
+		// on the version of lnd we detect.
+		if lndVersionIsCompatible(s.server.lndVersion, scriptEnforceVersion) {
+			return order.ChannelTypeScriptEnforced
+		}
+
+		return order.ChannelTypePeerDependent
+	})
 
 	var o order.Order
 	switch requestOrder := req.Details.(type) {
@@ -1197,6 +1245,7 @@ func (s *rpcServer) SubmitOrder(ctx context.Context,
 		a := requestOrder.Ask
 		kit, err := order.ParseRPCOrder(
 			a.Version, a.LeaseDurationBlocks, a.Details,
+			chanTypeSelector,
 		)
 		if err != nil {
 			return nil, err
@@ -1210,6 +1259,7 @@ func (s *rpcServer) SubmitOrder(ctx context.Context,
 		b := requestOrder.Bid
 		kit, err := order.ParseRPCOrder(
 			b.Version, b.LeaseDurationBlocks, b.Details,
+			chanTypeSelector,
 		)
 		if err != nil {
 			return nil, err
