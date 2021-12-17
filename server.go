@@ -52,6 +52,18 @@ var (
 			"signrpc", "walletrpc", "chainrpc", "invoicesrpc",
 		},
 	}
+
+	// scriptEnforceVersion is the version of lnd that enabled lease duration script
+	// enforcement as a new channel type. We'll use this to decide what
+	// order type to default to.
+	scriptEnforceVersion = &verrpc.Version{
+		AppMajor: 0,
+		AppMinor: 14,
+		AppPatch: 0,
+		BuildTags: []string{
+			"signrpc", "walletrpc", "chainrpc", "invoicesrpc",
+		},
+	}
 )
 
 // Server is the main poold trader server.
@@ -70,6 +82,8 @@ type Server struct {
 	// GetIdentity returns the current LSAT identification of the trader
 	// client or an error if none has been established yet.
 	GetIdentity func() (*lsat.TokenID, error)
+
+	lndVersion *verrpc.Version
 
 	cfg             *Config
 	db              *clientdb.DB
@@ -126,6 +140,14 @@ func (s *Server) Start() error {
 	shutdownFuncs["lnd"] = func() error { // nolint:unparam
 		s.lndServices.Close()
 		return nil
+	}
+
+	// Now that we have lnd, lets extract the current version so we can use
+	// this to gate features that we'll use based on the functionality
+	// available.
+	s.lndVersion, err = s.lndServices.Versioner.GetVersion(context.Background())
+	if err != nil {
+		return err
 	}
 
 	// As there're some other lower-level operations we may need access to,
